@@ -13,7 +13,19 @@ import tiktoken
 from contextlib import ExitStack
 from urllib.error import HTTPError
 
+def _combined_tex_content(self) -> Optional[str]:
+    if self.tex is None:
+        return None
 
+    content = self.tex.get("all")
+    if isinstance(content, str):
+        return content
+
+    fragments = [value for value in self.tex.values() if isinstance(value, str) and value]
+    if not fragments:
+        return None
+
+    return "\n".join(fragments)
 
 class ArxivPaper:
     def __init__(self,paper:arxiv.Result):
@@ -165,9 +177,11 @@ class ArxivPaper:
         introduction = ""
         conclusion = ""
         if self.tex is not None:
-            content = self.tex.get("all")
-            if content is None:
-                content = "\n".join(self.tex.values())
+            # content = self.tex.get("all")
+            # if content is None:
+            #     content = "\n".join(self.tex.values())
+            content = self._combined_tex_content()
+            if content is not None:
             #remove cite
             content = re.sub(r'~?\\cite.?\{.*?\}', '', content)
             #remove figure
@@ -216,9 +230,11 @@ class ArxivPaper:
     @cached_property
     def affiliations(self) -> Optional[list[str]]:
         if self.tex is not None:
-            content = self.tex.get("all")
-            if content is None:
-                content = "\n".join(self.tex.values())
+            # content = self.tex.get("all")
+            # if content is None:
+            #     content = "\n".join(self.tex.values())
+            content = self._combined_tex_content()
+            if content is not None:
             #search for affiliations
             possible_regions = [r'\\author.*?\\maketitle',r'\\begin{document}.*?\\begin{abstract}']
             matches = [re.search(p, content, flags=re.DOTALL) for p in possible_regions]
